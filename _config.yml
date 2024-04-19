@@ -106,7 +106,7 @@ analytics:
 author:
   name             : "codevarty"
   avatar           : "/assets/hisu.jpg"
-  bio              : "안녕하세요! 궁금한 것이 많은 사람입니다!!<br> 궁금한 내용을 직접 찾아가는 재미를 즐기고 있습니다!"
+  bio              : "안녕하세요! 궁금한 것이 많은 사람입니다!!"
   location         : "Republic of Korea"
   email            :
   links:
@@ -218,7 +218,7 @@ sass:
 
 # Outputting
 permalink: /:categories/:title/
-paginate: 5 # amount of posts to show
+paginate: 6 # amount of posts to show
 paginate_path: /page:num/
 timezone: # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
@@ -290,3 +290,9 @@ defaults:
       comments: # true
       share: true
       related: true
+  - scope:
+      path: "_pages"
+      type: pages
+    values:
+        layout: single
+        author_profile: true
