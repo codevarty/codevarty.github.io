@@ -11,7 +11,7 @@
 # https://mmistakes.github.io/minimal-mistakes/docs/quick-start-guide/#installing-the-theme
 
 # theme                  : "minimal-mistakes-jekyll"
-remote_theme             : "codevarty/minimal-mistakes"
+# remote_theme             : "codevarty/minimal-mistakes"
 minimal_mistakes_skin    : "default" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
 
 # Site Settings
@@ -22,7 +22,7 @@ subtitle                 : "공부 기록 저장소"
 name                     : "codevarty"
 description              : "공부한 내용이나 프로젝트 진행 사항들을 저장하는 곳입니다."
 url                      : "https://codevarty.github.io"
-baseurl                  : "/blog"
+baseurl                  : # "/blog"
 repository               : "https://github.com/codevarty/codevarty.github.io"
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 logo                     : # path of logo image to display in the masthead, e.g. "/assets/images/88x88.png"
@@ -112,7 +112,7 @@ author:
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
-      url: "mailto:hisu7789@gmail.com"
+      url: mailto:hisu7789@gmail.com
     - label: "Website"
       icon: "fas fa-fw fa-link"
       # url: "https://your-website.com"
