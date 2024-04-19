@@ -23,7 +23,7 @@ name                     : "codevarty"
 description              : "공부한 내용이나 프로젝트 진행 사항들을 저장하는 곳입니다."
 url                      : "https://codevarty.github.io"
 baseurl                  : "/blog"
-repository               : "codevarty/codevarty.github.io"
+repository               : "https://github.com/codevarty/codevarty.github.io"
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 logo                     : # path of logo image to display in the masthead, e.g. "/assets/images/88x88.png"
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
@@ -105,7 +105,7 @@ analytics:
 # Site Author
 author:
   name             : "codevarty"
-  avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
+  avatar           : "/assets/hisu.jpg"
   bio              : "안녕하세요! 궁금한 것이 많은 사람입니다!!<br> 궁금한 내용을 직접 찾아가는 재미를 즐기고 있습니다!"
   location         : "Republic of Korea"
   email            :
