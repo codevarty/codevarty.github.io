@@ -21,22 +21,22 @@ tags:
 먼저 옵시디언 작업을 하기 위한 저장소를 만들어야 한다.
 자신이 작업할 폴더를 만들고 그 곳에 깃 블로그가 있는 리포지토리를 클론 받는다.
 
-![](assets/images/post/Pasted%20image%2020240421004419.png)
+![](/assets/images/post/Pasted%20image%2020240421004419.png)
 
 **<font color= '#28a745'>Code</font>** 버튼에서 보이는 링크를 복사한다. 
 그런 다음 만들어 놓은 폴더에 cmd 를 열어 `git clone` 명령어를 이용해 클론 받는다.
 
-![](assets/images/post/Pasted%20image%2020240421005007.png)
+![](/assets/images/post/Pasted%20image%2020240421005007.png)
 
 클론 받은 폴더를 옵시디언 저장소로 사용한다.
 
 만약 이미 다른 옵시디언 저장소를 사용하고 있었다면 옵시디언 좌측 아래에 **다른 보관소 열기** 버튼을 누르면 다른 저장소를 사용할 수 있다.
 
-![](assets/images/post/other_store.png)
+![](/assets/images/post/other_store.png)
 
 보관소 폴더 열기를 통해 저장소 폴더를 선택한다.
 
-![](assets/images/post/import.png)
+![](/assets/images/post/import.png)
 
 ***
 ## git 플러그인 설치
@@ -50,7 +50,7 @@ git 플러그인을 설치하기 위해 아래 적힌 글을 참고하여 커뮤
 검색창에 **git** 을 검색하면 나오는 맨 앞에 있는 플러그인을 설치한다.
 설치 한 다음 **활성화 버튼**을 눌러 주면 git 플러그인 설치가 완료 된다.
 
-![](assets/images/post/Pasted%20image%2020240421010507.png)
+![](/assets/images/post/Pasted%20image%2020240421010507.png)
 
 위와 같은 화면이 뜬다면 설치가 완료된 것이다.
 
@@ -80,13 +80,13 @@ tags:
 
 그안에 template에 쓰이는 노트를 생성한다.
 
-![](assets/images/post/Pasted%20image%2020240421011411.png)
+![](/assets/images/post/Pasted%20image%2020240421011411.png)
 
 아래 글을 통해 **데일리 노트 플러그인** 설정란으로 이동한다.
 
 > 설정 > 코어 플러그인 > 데일리노트
 
-![](assets/images/post/Pasted%20image%2020240421011320.png)
+![](/assets/images/post/Pasted%20image%2020240421011320.png)
 새파일 경로에는 글을 올리는 곳이 들어가고 (`_post`) 템플릿 경로에는 아까 만들어 놓은 템플릿이 있는 경로인 `templates/post`를 입력한다.
 
 이러게 하면 플러그인 설정은 완료된다.
@@ -102,7 +102,7 @@ tags:
 
 이렇게 하고 **오늘의 데일리 노트 열기** 버튼을 통해 노트를 생성하면 `yyyy-MM-DD`형식의 파일 생성되고 위의 마크 다운 형식의 글이 작성된다.
 
-![](assets/images/post/Pasted%20image%2020240421011858.png)
+![](/assets/images/post/Pasted%20image%2020240421011858.png)
 이제 해당 파일에서 글을 작성하면 된다.
 
 ***
@@ -111,7 +111,7 @@ tags:
 git 설정에서 자동으로 올리는 방법이 존재한다.
 먼저 설정 탭에서 설치한 **git 플러그인**으로 이동한다.
 
-![](assets/images/post/Pasted%20image%2020240421012547.png)
+![](/assets/images/post/Pasted%20image%2020240421012547.png)
 위 설정을 통해 자동으로 커밋과 푸쉬가 일어나는데 동작하는 과정을 설명하면 아래와 같다.
 
 우선, 커밋이 생성되는 조건아래와 같다.
