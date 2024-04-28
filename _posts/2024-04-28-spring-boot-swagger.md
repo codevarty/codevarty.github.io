@@ -164,6 +164,7 @@ public class SignupUser {
 
 위 코드에 대한 예시는 아래와 같다.
 
-![](../assets/images/post/Pasted%20image%2020240428235914.png)
+![](../assets/images/post/Pasted%20image%2020240428235946.png)
 
-Example Value ㄹ
+Example Value 를 통해 입력 값 예시를 설정할 수 있다.
+
