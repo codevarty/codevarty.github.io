@@ -96,7 +96,7 @@ API 명세서 모습은 다음과 같다.
 
 ![](../assets/images/post/Pasted%20image%2020240429000315.png)
 
-###  추가사항
+### 추가사항
 위에서 문제는 회원 가입하는 경우 JWT 토큰을 사용하지 않지만 API 명세서에서는 자물쇠가 추가되는데 이건 전역적으로 추가되는 것이라 따로 지정하는 방법이 없는 것 같다.
 
 # API 설정 관련 어노 테이션
@@ -180,4 +180,6 @@ public class SignupUser {
 ![](../assets/images/post/Pasted%20image%2020240428235946.png)
 
 Example Value 를 통해 입력 값 예시를 설정할 수 있다.
+
+위 이미지에서 **Try it out** 버튼을 통해 API를 테스트 할 수 있다.
 
