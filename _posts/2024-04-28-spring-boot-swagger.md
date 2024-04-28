@@ -92,7 +92,11 @@ API 명세서 모습은 다음과 같다.
 오른 쪽 하단에 **Authorize** 부분은 JWT 를 추가 했을 때 나오게 된며 토큰값을 지정할 수 있게 된다.
 
 ![](../assets/images/post/Pasted%20image%2020240429000212.png)
+위 이미지 처럼 아무 값을 넣고 초록색 버튼을 누르면 각 API 옆에 자물쇠가 잠기게 된다.
 
+![](../assets/images/post/Pasted%20image%2020240429000315.png)
+
+위 =ㅇ
 
 # API 설정 관련 어노 테이션
 
