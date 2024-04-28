@@ -86,6 +86,11 @@ springdoc:
 이렇게 하면 화면이 API 명세서 화면이 보일 것이다.
 Swagger를 사용하는 경우 자동으로 controller 클래스를 통해 API 명세서를 작성해준다.
 
+API 명세서 모습은 다음과 같다.
+
+![](../assets/images/post/Pasted%20image%2020240429000105.png)
+오른 쪽 하단에 **Authorize** 부분은 
+
 # API 설정 관련 어노 테이션
 
 **@Tag** :  API 그룹 태그명 지정 가능하다.**
