@@ -91,10 +91,10 @@ API 명세서 모습은 다음과 같다.
 ![](../assets/images/post/Pasted%20image%2020240429000105.png)
 오른 쪽 하단에 **Authorize** 부분은 JWT 를 추가 했을 때 나오게 된며 토큰값을 지정할 수 있게 된다.
 
-![](../assets/images/post/Pasted%20image%2020240429000212.png)
+![](/assets/images/post/Pasted%20image%2020240429000212.png)
 위 이미지 처럼 아무 값을 넣고 초록색 버튼을 누르면 각 API 옆에 자물쇠가 잠기게 된다.
 
-![](../assets/images/post/Pasted%20image%2020240429000315.png)
+![](/assets/images/post/Pasted%20image%2020240429000315.png)
 
 ### 추가사항
 위에서 문제는 회원 가입하는 경우 JWT 토큰을 사용하지 않지만 API 명세서에서는 자물쇠가 추가되는데 이건 전역적으로 추가되는 것이라 따로 지정하는 방법이 없는 것 같다.
@@ -148,7 +148,7 @@ public class UserController {
 
 위 코드에 대한 예시는 다음과 같다.
 
-![](../assets/images/post/Pasted%20image%2020240428235624.png)
+![](/assets/images/post/Pasted%20image%2020240428235624.png)
 
 그리고 dto 클래스에서 **@Schema** 어노테이션을 통해 입력 값에 대한 설명과 예시를 줄 수 있다.
 
@@ -177,7 +177,7 @@ public class SignupUser {
 
 위 코드에 대한 예시는 아래와 같다.
 
-![](../assets/images/post/Pasted%20image%2020240428235946.png)
+![](/assets/images/post/Pasted%20image%2020240428235946.png)
 
 Example Value 를 통해 입력 값 예시를 설정할 수 있다.
 
@@ -190,11 +190,11 @@ Example Value 를 통해 입력 값 예시를 설정할 수 있다.
 
 (성공 표시)
 
-![](../assets/images/post/Pasted%20image%2020240429000650.png)
+![](/assets/images/post/Pasted%20image%2020240429000650.png)
 
 (실패 표시)
 
-![](../assets/images/post/Pasted%20image%2020240429000807.png)
+![](/assets/images/post/Pasted%20image%2020240429000807.png)
 
 # 결론
 API 명세서를 만드는 필요성에 대해 처음에는 알지 못했지만 프론트엔드와의 원할하게 작업하는데 API 명세서를 작성하는 것이 중요하다는 것을 깨닫게 되었다. 위 설명 부분에서는 코드라던지 생략된 부분이 많이 있는데 **Swagger 사용에 대해 초점**을 맞추다 보니 불필요한 코드를 안 보여주기 위해 이렇게 작성을 하였다.
