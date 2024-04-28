@@ -88,4 +88,7 @@ Swagger를 사용하는 경우 자동으로 controller 클래스를 통해 API �
 
 # API 설정 관련 어노 테이션
 
-@Tag  어노테이션을 사용하여 API 그룹 명 
+**@Tag** :  API 그룹 태그명 지정 가능하다.**
+****@Optional** : 
+
+회원 관리 Controller 를 예시로 설명하도록 하겠다.
