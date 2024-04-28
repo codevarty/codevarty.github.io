@@ -35,13 +35,15 @@ implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
 
 @Bean  
 public OpenAPI openAPI() {  
+
+// jwt 사용하는 경우 components 코드를 작성한다.
     String jwt = "JWT";  
     SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwt);  
     Components components = new Components().addSecuritySchemes(jwt, new SecurityScheme()  // JWT 토큰 사용
             .name(jwt)  
             .type(SecurityScheme.Type.HTTP)  
             .scheme("bearer")  
-            .bearerFormat("JWT")  
+            .bearerFormat("JWT") 
     );  
     return new OpenAPI()  
             .components(new Components())  
@@ -59,7 +61,7 @@ private Info apiInfo() {
 ```
 
 만약 Spring security를 사용한다면 Swagger URL 접근 허용을 해줘야 한다.
-`securityFilterChain` 메서드 안에 접근 허용 코드를 작성
+`securityFilterChain` 메서드 안에 접근 허용 코드를 작성한다.
 
 ```java
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -72,3 +74,6 @@ http.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
 // 생략
 }
 ```
+
+
+
