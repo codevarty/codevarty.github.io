@@ -94,5 +94,41 @@ Swagger를 사용하는 경우 자동으로 controller 클래스를 통해 API �
 
 회원 관리 Controller 를 예시로 설명하도록 하겠다.
 
-```
+```java
+@RestController  
+@RequiredArgsConstructor  
+@RequestMapping("/api")  
+// 이름을 '회원 관리 API', 설명 부분에 '회원 정보 API'라고 뜨게 된다.
+@Tag(name = "회원 관리 API", description = "회원 정보 API")  
+public class UserController {  
+    private final UserService userService;  
+  
+    @PostMapping("/signup")  
+    @Operation(  
+            summary = "유저 회원가입",  
+            description = "회원가입에는 JWT 토큰이 필요하지 않으며 아래와 같은 형식의 데이터를 받는다.")  
+    public String signup(@RequestBody @Valid SignupUser user) {  
+        userService.join(user);  
+        return "success";  
+    }  
+  
+    @GetMapping("/profile")  
+    @Operation(summary = "회원 정보 상세조회", description = "회원의 정보를 상세 조회 API")  
+    public UserResponse getUser(@AuthenticationPrincipal CustomUserDetails user) {  
+        return userService.getUserProfile(user.getId());  
+    }  
+  
+    @PutMapping("/update")  
+    @Operation(summary = "회원 정보 수정", description = "회원 정보를 수정에 사용하는 API")  
+    public Long update(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody @Valid UpdateUser user) {  
+        return userService.update(userDetails.getEmail(), user);  
+    }  
+  
+    @DeleteMapping("/delete")  
+    @Operation(summary = "회원 탈퇴", description = "회원 탈퇴 API")  
+    public void deleteUser(@AuthenticationPrincipal CustomUserDetails userDetails) {  
+        userService.deleteUser(userDetails.getEmail());  
+    }  
+  
+}
 ```
