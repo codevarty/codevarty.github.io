@@ -139,6 +139,8 @@ public class UserController {
 
 그리고 dto 클래스에서 **@Schema** 어노테이션을 통해 입력 값에 대한 설명과 예시를 줄 수 있다.
 
+아래 코드는 회원 가입 dto를 나타낸다.
+
 ```java
 @Data  
 @Builder  
@@ -159,3 +161,9 @@ public class SignupUser {
     private String phone;  
 }
 ```
+
+위 코드에 대한 예시는 아래와 같다.
+
+![](../assets/images/post/Pasted%20image%2020240428235914.png)
+
+Example Value ㄹ
