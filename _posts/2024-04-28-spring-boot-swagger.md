@@ -137,3 +137,4 @@ public class UserController {
 
 ![](../assets/images/post/Pasted%20image%2020240428235624.png)
 
+그리고 dto 클래스에서 **@Schema** ㅇ
