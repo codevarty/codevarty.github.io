@@ -89,6 +89,10 @@ Swagger를 사용하는 경우 자동으로 controller 클래스를 통해 API �
 # API 설정 관련 어노 테이션
 
 **@Tag** :  API 그룹 태그명 지정 가능하다.**
-****@Optional** : 
+****@Optional** : 각 API 대한 이름 및 설명을 추가할 수 있다,**
+****@ApiResponse** : 응답 코드에 대한 정보를 나타낼 수 있다.
 
 회원 관리 Controller 를 예시로 설명하도록 하겠다.
+
+```
+```
