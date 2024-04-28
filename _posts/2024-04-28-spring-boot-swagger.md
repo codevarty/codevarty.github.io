@@ -62,5 +62,13 @@ private Info apiInfo() {
 코드는 다음과 같다.
 
 ```java
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+// 생략
+http.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->  
+        authorizationManagerRequestMatcherRegistry  
+                .requestMatchers("/v3/**", "/swagger-ui/**", "/api-docs").permitAll()  
+                .anyRequest().authenticated());
 
+// 생략
+}
 ```
