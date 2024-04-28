@@ -59,7 +59,7 @@ private Info apiInfo() {
 ```
 
 만약 Spring security를 사용한다면 Swagger URL 접근 허용을 해줘야 한다.
-코드는 다음과 같다.
+`securityFilterChain` 메서드 안에 접근 허용 코드를 작성
 
 ```java
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
