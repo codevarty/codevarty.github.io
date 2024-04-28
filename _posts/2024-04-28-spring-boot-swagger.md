@@ -75,5 +75,12 @@ http.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
 }
 ```
 
+만약 api 명세서에 대한 링크를 설정하고 싶으면 yml(properties) 파일에 아래와 같은 코드를 추가한다.
+
+```yml
+springdoc:
+  swagger-ui:
+    path: /api-docs  # swagger-ui 접근 경로에 대한 별칭, 해당 주소로 접속해도 http://localhost:8080/swagger-ui/index.html로 리다이렉션 됨.
+```
 
 
