@@ -132,3 +132,8 @@ public class UserController {
   
 }
 ```
+
+위 코드에 대한 예시는 다음과 같다.
+
+![](../assets/images/post/Pasted%20image%2020240428235624.png)
+
