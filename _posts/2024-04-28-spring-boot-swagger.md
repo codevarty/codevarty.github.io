@@ -89,7 +89,10 @@ Swagger를 사용하는 경우 자동으로 controller 클래스를 통해 API �
 API 명세서 모습은 다음과 같다.
 
 ![](../assets/images/post/Pasted%20image%2020240429000105.png)
-오른 쪽 하단에 **Authorize** 부분은 
+오른 쪽 하단에 **Authorize** 부분은 JWT 를 추가 했을 때 나오게 된며 토큰값을 지정할 수 있게 된다.
+
+![](../assets/images/post/Pasted%20image%2020240429000212.png)
+
 
 # API 설정 관련 어노 테이션
 
