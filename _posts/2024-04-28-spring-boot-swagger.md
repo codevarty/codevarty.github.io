@@ -186,6 +186,15 @@ Example Value 를 통해 입력 값 예시를 설정할 수 있다.
 ![](../assets/images/post/Pasted%20image%2020240429000626.png)
 
 여기서 파란 색 버튼을 누르면 테스트 할 수 있다.
-그리고  Response body 부분에 응답 코드와 Response header ()
+그리고  Response body 부분에 응답 코드와 Response header (응답 헤더)를 볼 수 있다.
+
+(성공 표시)
 
 ![](../assets/images/post/Pasted%20image%2020240429000650.png)
+
+(실패 표시)
+
+![](../assets/images/post/Pasted%20image%2020240429000807.png)
+
+# 결론
+API 명세서를 만드
