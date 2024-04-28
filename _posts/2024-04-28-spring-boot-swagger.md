@@ -183,3 +183,5 @@ Example Value 를 통해 입력 값 예시를 설정할 수 있다.
 
 위 이미지에서 **Try it out** 버튼을 통해 API를 테스트 할 수 있다.
 
+![](../assets/images/post/Pasted%20image%2020240429000626.png)
+
