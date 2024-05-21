@@ -286,7 +286,7 @@ class UserController(val userService: UserService) {
 
 현재 서버 포트는 8090으로 되어 있다. 즉 회워 가입 링크는 다음과 같다.
 
-http://localhost:8090/signup
+[http://localhost:8090/signup](http://localhost:8090/signup)
 
 postman 으로 테스트한 결과는 다음과 같다.
 ![](/assets/images/post/Pasted%20image%2020240508002951.png)
@@ -299,7 +299,7 @@ postman 으로 테스트한 결과는 다음과 같다.
 
 아래는 현재 작업중인 프로젝트 **깃허브 주소**이다.
 
-https://github.com/codevarty/friendbot
+[https://github.com/codevarty/friendbot](https://github.com/codevarty/friendbot)
 
 # 결론
 원래 프로젝트 데이터베이스는 간단하게 h2를 사용할려고 했다. 개인 프로젝트를 하면서 한번 클라우드 데이터베이스를 직접 연결하고 싶어서 무료로 사용이 가능한 구글 클라우드를 사용하였다. 구글 클라우드에서 데이터베이스를 생성하는 것은 쉬었지만 코틀린 문법에 익숙치 않아서 엔티티 클래스 작성 부분에서 애를먹었다. 
