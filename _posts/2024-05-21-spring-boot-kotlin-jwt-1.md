@@ -1,5 +1,5 @@
 ---
-title: Spring Boot (kotlin) jwt
+title: Spring Boot (kotlin) jwt(1/2)
 categories:
   - spring boot
 tags:
@@ -8,7 +8,7 @@ tags:
   - springsecurity
   - jwt
 ---
-# Spring Boot (Kotlin) JWT 로그인
+# Spring Boot (Kotlin) JWT 로그인(1/2)
 팀 프로젝트에서 JWT를 사용하였지만 그 때 당시에 Spring Boot가 처음이기도 하고 JWT를 처음 사
 용하는 것이기 때문에 잘 알지 못한 상태에서 코드를 작성하여 이번에 제대로 정리를 해보자고 한다.
 
