@@ -271,7 +271,7 @@ fun generateAccessToken(email: String): String {
 > Access Token은 **Authorization** 헤더가 되고, <br>
 > RefreshToken은 **Authorization-refresh** 헤더가 된다.
 
-## 3-3 토큰 추출 부분
+### 3-3 토큰 추출 부분
 
 ```kotlin
 /**  
@@ -321,7 +321,7 @@ fun generateAccessToken(email: String): String {
 }
 ```
 
-## 3-4 토큰 검증 코드
+### 3-4 토큰 검증 코드
 ```kotlin
 /**  
  * 토큰 검증 메소드 
@@ -356,3 +356,642 @@ fun generateAccessToken(email: String): String {
 
 > 현재는 에러 로그를 출력하지만 예외 처리를 할 수 있도록 코드를 수정할 예정이다.
 
+## 4. jwt 인증 필터 설명
+jwt를 발급하고 추출하는 서비스 부분을 작성하였으니 이제 실제로 적용을 해야 한다.
+
+만들어 놓은 JWT 필터는 특정 요청(회원 가입, 로그인 등)을 제외하고는 거의 모든 요청에  토큰을 확인하고 검증하는 작업이 있다. 
+
+JWT 필터는 `OncePerRequestFilter` 를 상속 받아 구현을 한다.
+
+> **OncePerRequestFilter**는 Spring에서 제공하는 추상클래스로 HTTP 요청에 대해 필터가 한 번만 실행된다.
+
+해당 필터에 대해 간단하게 먼저 설명을 하자면 "/login" 이외에 요청을 보냈을 시, **토큰들을 받아서 유효성 검사를 실시하며 인증 처리/인증 실패/토큰 재발급 등을 수행하는 역할을 하는 필터**이다.
+
+JWT 토큰 발급에 대한 설명은 이전 페이지를 참고하자.
+
+[Spring Boot (Kotlin) JWT 로그인(1/2)](https://codevarty.github.io/spring%20boot/spring-boot-kotlin-jwt-1/)
+
+## 5. JwtAuthenticationProcessingFilter 부분 작성
+
+jwt 필터의 전체 코드는 다음과 같다.
+
+```kotlin
+// import 문 생략..
+  
+class JwtAuthenticationProcessingFilter(  
+    private val jwtService: JwtService,  
+    private val userRepository: UserRepository,  
+    private val customUserDetailService: CustomUserDetailService  
+) : OncePerRequestFilter() {  
+  
+    companion object {
+        private const val NO_CHECK_URL = "/api/user/login"  
+    }  
+  
+    private val authoritiesMapper = NullAuthoritiesMapper()  
+  
+    @Throws(ServletException::class, IOException::class)  
+    override fun doFilterInternal(  
+        request: HttpServletRequest,  
+        response: HttpServletResponse,  
+        filterChain: FilterChain  
+    ) {  
+        if (request.requestURI == NO_CHECK_URL) {  
+            filterChain.doFilter(request, response) // /login 호출이 들어오면 다음 필터 호출  
+            return  
+        }  
+        // 사용자 요청에서 refresh token 추출  
+        val refreshToken = jwtService.extractRefreshToken(request)  
+            .filter(jwtService::isTokenValid)  
+            .orElse(null)  
+  
+        // 1. refresh token 이 있는 경우  
+        if (refreshToken != null) {  
+            checkRefreshTokenAndReIssueAccessToken(response, refreshToken)  
+        }  
+  
+        // 2. refresh token 이 없는 경우  
+        checkAccessTokenAndAuthentication(request, response, filterChain)  
+    }  
+  
+    private fun checkRefreshTokenAndReIssueAccessToken(response: HttpServletResponse, refreshToken: String) {  
+        userRepository.findByRefreshToken(refreshToken)  
+            .ifPresent { user ->  
+                run {  
+                    val reIssuedRefreshToken = reIssueRefreshToken(user)  
+                    jwtService.sendAccessAndRefreshToken(  
+                        response,  
+                        jwtService.generateAccessToken(user.email),  
+                        reIssuedRefreshToken  
+                    )  
+                }  
+            }    }  
+  
+    private fun reIssueRefreshToken(user: User): String {  
+        val generateRefreshToken = jwtService.generateRefreshToken()  
+        user.updateToken(generateRefreshToken)  
+        userRepository.save(user)  
+        return generateRefreshToken  
+    }  
+  
+    @Throws(ServletException::class, IOException::class)  
+    fun checkAccessTokenAndAuthentication(  
+        request: HttpServletRequest?, response: HttpServletResponse?,  
+        filterChain: FilterChain  
+    ) {  
+        jwtService.extractAccessToken(request!!)  
+            .filter(jwtService::isTokenValid)  
+            .ifPresent { accessToken ->  
+                jwtService.extractEmail(accessToken)  
+                    .ifPresent { email ->  
+                        userRepository.findByEmail(email)  
+                            .ifPresent { myUser: User? -> this.saveAuthentication(myUser!!) }  
+                    }            }        filterChain.doFilter(request, response)  
+    }  
+  
+    private fun saveAuthentication(user: User) {  
+        val customUserDetails = customUserDetailService.loadUserByUsername(user.email)  
+        val authentication = UsernamePasswordAuthenticationToken(  
+            customUserDetails,  
+            null,            authoritiesMapper.mapAuthorities(customUserDetails.authorities)  
+        )  
+  
+        SecurityContextHolder.getContext().authentication = authentication  
+    }  
+}
+```
+
+클라이언트에서 로그인 요청시 다음 필터로 건너 뛰며 로그인 외에는 다음과 같다. 
+
+클라이언트 요청 헤더에서 RefreshToken의 유무에 따라 두 가지 분기 작용
+1. 토큰이 있을 경우 AccessToken 및 Refresh 토큰재발급
+2. 토큰이 없을 경우 AccessToken을 검증 한 후 다음 필터 적용
+
+### 5-1. Refresh Token 확인 및 토큰 재발급
+
+```kotlin
+// Refresh 토큰을 통한 유저 확인 및 재발급
+private fun checkRefreshTokenAndReIssueAccessToken(response: HttpServletResponse, refreshToken: String) {  
+    userRepository.findByRefreshToken(refreshToken)  
+        .ifPresent { user ->  
+            run {  
+                val reIssuedRefreshToken = reIssueRefreshToken(user)  
+                jwtService.sendAccessAndRefreshToken(  
+                    response,  
+                    jwtService.generateAccessToken(user.email),  
+                    reIssuedRefreshToken  
+                )  
+            }  
+        }}  
+
+// RefreshToken 재발급 및 DB 업데이트 메소드
+private fun reIssueRefreshToken(user: User): String {  
+    val generateRefreshToken = jwtService.generateRefreshToken()  
+    user.updateToken(generateRefreshToken)  
+    userRepository.save(user)  
+    return generateRefreshToken  
+}
+```
+
+RefreshToken을 확인 하고 재발급을 하는 로직으로 각 메서드의 기능은 다음과 같다.
+
+- **checkRefreshTokenAndReIssueAccessToken** : 추출된 refreshToken을 통해 데이터베이스에 저장된 유저 정보를 얻는 다. 그후 `reIssueRefreshToken` 메소드를 통해 RefreshToken을 클라이언트에 재발급한다.
+- **reIssueRefreshToken** : 사용자 클래스를 받아서 RefreshToken을 새로 생성한 다음 변경된  RefreshToken으로 데이터베이스 업데이트를 한다.
+
+### 5-2 AccessToken 검증 및 인증 처리
+
+```kotlin
+// java throws와 같음.
+@Throws(ServletException::class, IOException::class)  
+fun checkAccessTokenAndAuthentication(  
+    request: HttpServletRequest?, response: HttpServletResponse?,  
+    filterChain: FilterChain  
+) {  
+    jwtService.extractAccessToken(request!!)  
+        .filter(jwtService::isTokenValid)  
+        .ifPresent { accessToken ->  
+            jwtService.extractEmail(accessToken)  
+                .ifPresent { email ->  
+                    userRepository.findByEmail(email)  
+                        .ifPresent { myUser: User? -> this.saveAuthentication(myUser!!) }  
+                }        }    filterChain.doFilter(request, response)  
+}  
+
+// 인증 처리 메서드
+private fun saveAuthentication(user: User) {  
+    val customUserDetails = customUserDetailService.loadUserByUsername(user.email)  
+    val authentication = UsernamePasswordAuthenticationToken(  
+        customUserDetails,  
+        null,
+        // 사용자의 권한 목록을 매핑하여 설정한다.
+        authoritiesMapper.mapAuthorities(customUserDetails.authorities)  
+    )  
+
+	// 생성된 인증 객체를 현재 보안 컨텍스트에 설정.
+	// 이를 통해 실행되는 모든 코드가 이 인증 정보를 참조할 수 있게된다.
+    SecurityContextHolder.getContext().authentication = authentication  
+}
+```
+
+`jwtService.extractAccessToken`를 통해 AccessToken을 추출한 다음 이메일을 추출해서 해당 이메일의 유저를 찾아 `saveAuthentication`메서드를 실행 시켜 인증 처리를 한다.
+
+`customUserDetailService.loadUserByUsername(user.email)`를 통해 유저의 이메일로 `CustomUserDetails` 클래스를 생성하여 `SecurityContextHolder.getContext().authentication`에 담아 인증 처리를 한다.
+
+>CustomUserDetails와 CustomUserDetailService 코드는 마지막 부분에 추가 코드 작성 부분을 참고하면 된다. (글을 다 작성한 이후 알게 되었다...)
+## 6. JSON 로그인 필터 적용
+
+로그인을 할 때 JSON 통신을 하기 때문에 RequestBody 형식으로 한다.
+
+요청 형식은 다음과 같다.
+
+```json
+{
+
+"email" : "test@naver.com",
+"password" : "test1234!"
+
+}
+```
+
+email과 password로 로그인 방식을 구현한다.
+
+JSON 로그인 필터는 `AbstractAuthenticationProcessingFilter` 추상 클래스를 상속받아 작성한다. 
+
+> 기본적으로 **attemptAuthentication()** 은 인증 처리 메소드이다.
+
+전체 코드는 다음과 같다.
+
+```kotlin
+//import 문 생략...
+
+class CustomJsonLoginFilter(private val objectMapper: ObjectMapper) :  
+    AbstractAuthenticationProcessingFilter(AntPathRequestMatcher("/api/user/login", "POST")) {  
+  
+  
+    private val log = LoggerFactory.getLogger(CustomJsonLoginFilter::class.java)  
+  
+  
+    override fun attemptAuthentication(request: HttpServletRequest?, response: HttpServletResponse?): Authentication {  
+        if (request === null) {  
+            throw AuthenticationServiceException("AuthenticationService")  
+        }  
+  
+  
+        if (request.contentType === null || request.contentType != "application/json") {  
+            throw AuthenticationServiceException("Authentication Content-Type not supported: " + request.contentType)  
+        }  
+  
+        val messageBody = StreamUtils.copyToString(request.inputStream, StandardCharsets.UTF_8)  
+        val usernamePasswordMap: MutableMap<String, String>? = objectMapper.readValue(  
+            messageBody,  
+            MutableMap::class.java  
+        ) as MutableMap<String, String>?  
+  
+        val email = usernamePasswordMap?.get("email")  
+        val password = usernamePasswordMap?.get("password")  
+  
+  
+        log.info("email=$email, password=$password")  
+  
+        val authenticationToken = UsernamePasswordAuthenticationToken(email, password)  
+        return authenticationManager.authenticate(authenticationToken)  
+    }  
+}
+```
+
+login URL 요청시 해당 필터가 작동을 한다.
+
+### 6-1. 인증 처리 부분
+
+```kotlin
+val messageBody = StreamUtils.copyToString(request.inputStream, StandardCharsets.UTF_8)  
+val usernamePasswordMap: MutableMap<String, String>? = objectMapper.readValue(  
+    messageBody,  
+    MutableMap::class.java  
+) as MutableMap<String, String>?
+
+val email = usernamePasswordMap?.get("email")  
+val password = usernamePasswordMap?.get("password")
+
+// email과 password 출력
+log.info("email=$email, password=$password")
+
+// 사용자 이메일과 비밀번호를 통해 인증 토큰 발행
+val authenticationToken = UsernamePasswordAuthenticationToken(email, password)  
+return authenticationManager.authenticate(authenticationToken)
+```
+
+objectMapper을 통해 request를 통해 받은 JSON 부분에서 email과 password 부분을 받는다.
+
+`UsernamePasswordAuthenticationToken` 클래스는 Spring Security에서 제공하는 인증 객체로, 사용자의 자격 증명을 나타낸다. 사용자의 이메일과 비밀번호를 받아 인증 토큰을 생성하다.
+
+그다음 `authenticationManager.authenticate(authenticationToken)`을 통해 인증을 시도한다.
+인증에 성공하면 인증 정보가 반환되며, 실패할 때 인증 실패 예외가 발생한다.
+
+## 7. 로그인 성공 & 실패 부분
+
+이번 코드에서는 로그인 필터에서 성공 혹은 실패 했을 때 Handler 라는 클래스를 통해 처리를 한다.
+
+이 핸들러는 컴포넌트로 로그인 필터 후에 실행이 된다. 
+
+각각의 핸들러 코드는 다음과 같다.
+
+### 7-1. 로그인 성공 핸들러
+
+해당 핸들러는 `SimpleUrlAuthenticationSuccessHandler` 클래스를 상속바다 사용된다.
+
+전체 코드는 다음과 같다.
+
+```kotlin
+//import문 생략..
+
+@Component  
+class LoginSuccessHandler( // 로그인 성공시 실행 되는 핸들러  
+    private val jwtService: JwtService,  
+    // userService 를 사용하면 filter 순환 에러가 발생하므로 userRepository 를 사용  
+    private val userRepository: UserRepository,  
+    private val objectMapper: ObjectMapper  
+) : SimpleUrlAuthenticationSuccessHandler() {  
+  
+  
+    private val log = LoggerFactory.getLogger(LoginSuccessHandler::class.java)  
+  
+    @Value("\${jwt.access.expiration}")  
+    private lateinit var accessTokenExpiration: String  
+  
+    private fun extractEmail(authentication: Authentication): String {  
+        val userDetails: CustomUserDetails = authentication.principal as CustomUserDetails  
+        return userDetails.getEmail()  
+    }  
+  
+    @Throws(IOException::class, ServletException::class)  
+    override fun onAuthenticationSuccess(  
+        request: HttpServletRequest?,  
+        response: HttpServletResponse,  
+        authentication: Authentication? // 사용자 인증 정보
+    ) {  
+        if (authentication == null) return  
+        val email: String = extractEmail(authentication)  
+        val accessToken: String = jwtService.generateAccessToken(email)  
+        val refreshToken: String = jwtService.generateRefreshToken()  
+  
+        // 사용자가 로그인 할 때 마다  새로운 토큰을 생성하여 발급한다.  
+        jwtService.sendAccessAndRefreshToken(response, accessToken, refreshToken)  
+        
+        val user: User = userRepository.findByEmail(email)  
+            .orElseThrow { Error("유저를 찾을 수 없습니다.") }  
+  
+        jwtService.updateRefreshToken(user.email, refreshToken)  
+  
+        log.info("Login Success. email={}", user.email)  
+        log.info("Login Success. AccessToken={}", accessToken)  
+        log.info("accessToken Expiration={}", accessTokenExpiration)  
+  
+        response.status = HttpServletResponse.SC_OK // response.status == 200 (ok)
+        response.contentType = "application/json"  
+        response.characterEncoding = "UTF-8"  
+
+		// 클라이언트에 반환할 response dto
+        val userResponse = UserResponse(  
+            username = user.name,  
+            email = user.email,  
+            birthDate = user.birthdate  
+        )  
+  
+        objectMapper.writeValue(response.writer, userResponse)  
+    }
+```
+
+로그인에 성공을 했을 때 `JwtService`를 통해 클라이언트에 헤더로 AccessToken과 RefreshToken을 을 발급한다.
+
+로그인 정보로 이메일을 확인하여 DB에 사용자가 없으면 에러 메시지를 출력한다.
+
+그리고 클라이언트에 UserResponse dto 클래스를 사용하여 사용자 이름, 이메일, 생일을 주게 된다.
+
+
+### 7-2. 로그인 실패 핸들러
+
+해당 핸들러는  `SimpleUrlAuthenticationFailureHandler` 클래스를 상속 받아 실행 된다.
+
+전체 코드는 다음과 같다.
+
+```kotlin
+//import 문 생략..
+
+@Component // 로그인 실패시 실행 되는 핸들러.  
+class LoginFailureHandler(private val objectMapper: ObjectMapper) :  
+    SimpleUrlAuthenticationFailureHandler() {  
+  
+    companion object {  
+        private const val ERROR_MESSAGE = "이메일이나 비밀번호를 확인해주세요."  
+    }  
+  
+    override fun onAuthenticationFailure(  
+        request: HttpServletRequest?,  
+        response: HttpServletResponse?,  
+        exception: AuthenticationException?  
+    ) {  
+        if (response == null || !response.isCommitted) {  
+            throw AuthenticationServiceException("Authentication failed")  
+        }  
+  
+        response.status = HttpServletResponse.SC_BAD_REQUEST  
+        response.contentType = MediaType.APPLICATION_JSON_VALUE  
+        objectMapper.writeValue(response.outputStream, ERROR_MESSAGE)  
+  
+    }  
+}
+```
+
+로그인이 실패 했을 때 에러 메시지를 클라이언트에 보내준다.
+
+이 때 HTTP status 값은 400 (BadRequest)가 된다.
+
+이제 기본적으로 작성해야 할 클래스 부분을 만들었다. 이 부분을 Spring Security에 적용하기 위해 Security Config 클래스를 생성하여 필터를 적용해야 한다.
+
+## 9. Security Config 클래스 작성
+
+해당 클래스에서 이 때 까지 만들어 놓은 필터와 핸들러 클래스를 사용하게 된다.
+
+전체 코드는 다음과 같다.
+
+```kotlin
+//import 생략..
+
+@Configuration  
+@EnableWebSecurity  
+class SecurityConfig(  
+    private val jwtService: JwtService,  
+    private val userRepository: UserRepository,  
+    private val customUserDetailService: CustomUserDetailService,  
+    private val objectMapper: ObjectMapper,  
+    private val loginSuccessHandler: LoginSuccessHandler,  
+    private val loginFailureHandler: LoginFailureHandler,  
+  
+    ) {  
+  
+    @Bean  
+    fun passwordEncoder(): BCryptPasswordEncoder = BCryptPasswordEncoder()  
+
+	// 허용 URL
+    private val allowPatterns = arrayOf("/", "/api/user/signup")  
+  
+    @Bean  
+    fun authenticationManager(): AuthenticationManager {  
+        val provider = DaoAuthenticationProvider()  
+        provider.setPasswordEncoder(passwordEncoder())  
+        provider.setUserDetailsService(customUserDetailService)  
+        return ProviderManager(provider)  
+    }  
+  
+    @Bean  
+    fun customJsonLoginFilter(): CustomJsonLoginFilter {  
+        val customJsonLoginFilter = CustomJsonLoginFilter(objectMapper)  
+        customJsonLoginFilter.setAuthenticationManager(authenticationManager())  
+        customJsonLoginFilter.setAuthenticationSuccessHandler(loginSuccessHandler)  
+        customJsonLoginFilter.setAuthenticationFailureHandler(loginFailureHandler)  
+        return customJsonLoginFilter  
+  
+    }  
+  
+    @Bean  
+    fun jwtAuthenticationProcessingFilter(): JwtAuthenticationProcessingFilter {  
+        return JwtAuthenticationProcessingFilter(jwtService, userRepository, customUserDetailService)  
+    }  
+  
+    @Bean  
+    open fun filterChain(http: HttpSecurity): SecurityFilterChain {  
+  
+        http.csrf { it.disable() }  
+        http.httpBasic { it.disable() } // form login, redirect 비활성화 => rest api 통신을 하기 때문  
+  
+        http  
+            .authorizeHttpRequests { authorizeRequests ->  
+                authorizeRequests  
+                    .requestMatchers(*allowPatterns).permitAll()  
+                    .anyRequest().authenticated()// 테스트를 위해 모두 허용  
+            }  
+  
+        // 세션을 사용하지 않으므로 STATELESS 설정  
+        http.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }  
+  
+        // filter 적용  
+        http.addFilterAfter(customJsonLoginFilter(), LogoutFilter::class.java)  
+        http.addFilterBefore(jwtAuthenticationProcessingFilter(), CustomJsonLoginFilter::class.java)  
+  
+        return http.build()  
+    }  
+}
+```
+
+
+### 9-1 빈 등록 메소드 부분
+먼저 가장 중요한 `filterChain`을 제외한 다른 메소드들을 설명할려고 한다.
+
+```kotlin
+@Bean  
+fun passwordEncoder(): BCryptPasswordEncoder = BCryptPasswordEncoder()   
+  
+@Bean  
+fun authenticationManager(): AuthenticationManager {  
+    val provider = DaoAuthenticationProvider()  
+    provider.setPasswordEncoder(passwordEncoder())  
+    provider.setUserDetailsService(customUserDetailService)  
+    return ProviderManager(provider)  
+}  
+  
+@Bean  
+fun customJsonLoginFilter(): CustomJsonLoginFilter {  
+    val customJsonLoginFilter = CustomJsonLoginFilter(objectMapper)  
+    customJsonLoginFilter.setAuthenticationManager(authenticationManager())  
+    customJsonLoginFilter.setAuthenticationSuccessHandler(loginSuccessHandler)  
+    customJsonLoginFilter.setAuthenticationFailureHandler(loginFailureHandler)  
+    return customJsonLoginFilter  
+  
+}  
+  
+@Bean  
+fun jwtAuthenticationProcessingFilter(): JwtAuthenticationProcessingFilter {  
+    return JwtAuthenticationProcessingFilter(jwtService, userRepository, customUserDetailService)  
+}
+```
+
+**passwordEncoder** : 비밀번호 암호화에 사용되는 메소드
+- DB에 비밀번호를 저장할 때 암호화된 상태로 저장하기 위해 사용된다.
+
+
+**authenticationManager** : 인증 처리를 담당하는 메소드
+- 비밀번호 암호화를 위해 `passwordEncoder`를 사용했다.
+- `customUserDetailService` 서비스를 사용한다. -> 추가 코드 부분에 설명하겠다.
+
+**customJsonLoginFilter** : 로그인 필터를  빈 등록을 한 메소드
+- 인증 처리를 담당하는 부분을 `authenticationManager`를 사용함
+- 그라고 각 성공 & 실패 핸들러를 등록하였다.
+
+**jwtAuthenticationProcessingFilter**  : jwt filter를 빈 등록을 한 메소드이다.
+
+빈 등록을 통해 싱글톤으로 사용이 가능하다.
+
+### 7-2 Filter Chain에 대한 부분
+
+```kotlin
+private val allowPatterns = arrayOf("/", "/api/user/signup")
+
+@Bean  
+open fun filterChain(http: HttpSecurity): SecurityFilterChain {  
+  
+    http.csrf { it.disable() }  // script 변조 공격 막기 위해 비활성화
+    http.httpBasic { it.disable() } // form login, redirect 비활성화 => rest api 통신을 하기 때문  
+  
+    http  
+        .authorizeHttpRequests { authorizeRequests ->  
+            authorizeRequests  
+                .requestMatchers(*allowPatterns).permitAll()  
+                .anyRequest().authenticated()  
+        }  
+  
+    // 세션을 사용하지 않으므로 STATELESS 설정  
+    http.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }  
+  
+    // filter 적용  
+    http.addFilterAfter(customJsonLoginFilter(), LogoutFilter::class.java)  
+    http.addFilterBefore(jwtAuthenticationProcessingFilter(), CustomJsonLoginFilter::class.java)  
+  
+    return http.build()  
+}
+```
+
+주석을 확인해도 되겠지만 여기서 `authorizeHttpRequest`부분에 대해 작성한다.
+
+```kotlin
+    http  
+        .authorizeHttpRequests { authorizeRequests ->  
+            authorizeRequests  
+                .requestMatchers(*allowPatterns).permitAll() // 접근 허용
+                .anyRequest().authenticated()  
+        } 
+```
+
+해당 부분은 요청에 대한 권한을 설정하는 부분으로 `requestMachers`를 통해 allowPatterns의 URL에 대한 접근을 허용하고 있다.
+
+```kotlin
+private val allowPatterns = arrayOf("/", "/api/user/signup")
+```
+
+`.anyRequest().authenticated()`는 위 허용된 URL을 제외하고 모든 접속에는 인증이 되어야 한다. 즉 JWT 토큰을 사용해야 하는 것이다.
+
+다음은 커스텀 필터를 적용하는 것으로 적용 순서는 다음과 같다.
+
+```kotlin
+    // filter 적용  
+    http.addFilterAfter(customJsonLoginFilter(), LogoutFilter::class.java)  
+    http.addFilterBefore(jwtAuthenticationProcessingFilter(), 
+	    CustomJsonLoginFilter::class.java)
+```
+
+로그아웃 필터 이후에 커스텀 필터가 동작한다.
+
+**순서: LogoutFilter -> JwtAuthenticationProcessingFilter -> CustomJsonUsernamePasswordAuthenticationFilter**
+
+## 10. 추가 코드 설명
+위에서 CustomUserDetails와 CustomUserDetailService에 대한 글을 적는 부분을 깜박하여 아래에 추가할려고 한다. 
+
+### 10-1. CustomUserDetails
+
+UserDetails 인터페이스를 상속 받는다.
+
+기본적으로 `getAuthorities` 사용자 권한(role)을 받아야 하는데 현재 테이블에 권한을 따로 부여하지 않았기 때문에 null을 반환 하도록 하였다.
+
+```kotlin
+class CustomUserDetails(private val user: User) : UserDetails {  
+    // null을 반환하도록 한다.  
+    override fun getAuthorities(): MutableCollection<out GrantedAuthority>? {  
+        return null  
+    }  
+  
+    fun getEmail(): String = user.email // 이메일을 반환하도록 한다.
+  
+    override fun getPassword(): String = user.password  
+  
+    override fun getUsername(): String = user.email  
+  
+    override fun isAccountNonExpired(): Boolean = true  
+  
+    override fun isAccountNonLocked(): Boolean = true  
+  
+    override fun isCredentialsNonExpired(): Boolean = true  
+  
+    override fun isEnabled(): Boolean = true  
+}
+```
+
+인증된 사용자를 Spring Seucirty에서 저장을 한다. 그래서 Controller에서 따로 @Authentication 어노테이션을 통해 인증 페이지에서 사용자 정보를 가져 올 수 있다.
+
+원하는 값을 반환할 수 있도록 메소드를 정의할 수 있다.
+
+### 10-2. CustomUserDetailService
+
+UserDetailsService 인터페이스를 상속받는다.
+
+```kotlin
+//import 문 생략..
+
+@Service  
+class CustomUserDetailService(private val userRepository: UserRepository) : UserDetailsService {  
+    override fun loadUserByUsername(email: String): UserDetails {  
+        val user: User = userRepository.findByEmail(email)  
+            .orElseThrow { Error("사용자를 찾을 수 없습니다.") }  
+  
+        return CustomUserDetails(user)  
+    }  
+}
+```
+
+이메일을 통해 DB에 저장된 User 정보를 가져와서 `CustomUserDetails` 객체로 반환하고 있다.
+
+## 결론
+기존에 자바로 작성한 코드를 다시 한번 코틀린으로 작성을 해보았다. 그 당시에는 해당 코드가 어떤 형식으로 작동이 되는지 이해가 잘 가지 않아 에러가 났을 때 어디 부분에 문제가 있었는지 잘 알지 못했다.
+
+이번에 다시 한번 정리해서 JWT 토큰을 서버에서 발급하는 작동 원리에 대해 자세히 알게 된 것 같다.
+
+**다음시간에는 리엑트에서 JWT 토큰으로 통신하는 방법에 대해 알아볼려고 한다.**
